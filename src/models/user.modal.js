@@ -4,17 +4,10 @@ import bcrypt from "bcrypt";
 
 const userSchema = new Schema(
   {
-    username: {
-      type: String,
-      lowercase: true,
-      trim: true,
-    },
-    email: {
-      type: String,
+    title: {  
+      type: String, 
       required: true,
-      unique: true,
-      lowecase: true,
-      trim: true,
+      enum: ["Mr", "Mrs", "Miss", "Dr", "Prof", "Rev", "Other"],
     },
     fullName: {
       type: String,
@@ -22,38 +15,16 @@ const userSchema = new Schema(
       trim: true,
       index: true,
     },
-    age: {
-      type: Number,
-      // required: true,
-    },
-    sex: {
-      type: String,
-      enum: ["Male", "Female", "Other"],
-      // required: true,
-    },
-    image: {
-      type: String,
-      // required: true,
-    },
-    education: {
-      type: String,
-      // required: true,
-    },
-    city: {
-      type: String,
-      // required: true,
-    },
-    state: {
-      type: String,
-      // required: true,
-    },
-    country: {
-      type: String,
-      // required: true,
-    },
     phone: {
       type: Number, // cloudinary url
       // required: true,
+    },
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      lowecase: true,
+      trim: true,
     },
     user_type: {
       type: String,
@@ -63,18 +34,21 @@ const userSchema = new Schema(
       type: String,
       required: true,
     },
-    referral_code: {
+    country: {
+      type: String,
+      // required: true,
+    },
+    dob: {  
+      type: Date,
+      // required: true,    
+    },
+    sponser_code: {
       type: String,
     },
-    referredBy: { type: String },
+    sponserBy: { type: String },
     points: { type: Number, default: 0 },
     refreshToken: {
       type: String,
-    },
-    region: {
-      type: String,
-      enum: ["india", "nepal"],
-      required: true,
     },
   },
   {

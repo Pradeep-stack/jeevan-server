@@ -27,20 +27,14 @@ const generateAccessAndRefereshTokens = async (userId) => {
 
 const registerUser = asyncHandler(async (req, res) => {
   const {
+    title,
     fullName,
     email,
     phone,
     password,
-    username,
-    referredBy,
-    age,
-    sex,
-    image,
-    education,
-    city,
-    state,
+    dob,
+    sponserBy,
     country,
-    region,
   } = req.body;
 
   const existingUser = await User.findOne({ email });
@@ -51,31 +45,25 @@ const registerUser = asyncHandler(async (req, res) => {
       .json(new ApiError(409, "User with email already exists"));
   }
 
-  const newReferralCode = nanoid(6);
+  const newReferralCode = nanoid(10);
 
-  const user_type = referredBy ? "Admin" : "User";
+  const user_type = sponserBy ? "Admin" : "User";
 
   const user = new User({
-    username,
     fullName,
     email,
+    title,
+    dob,
     phone,
     password,
-    user_type,
-    referral_code: newReferralCode,
-    referredBy: referredBy,
-    age,
-    sex,
-    image,
-    education,
-    city,
-    state,
+    user_type:user_type,
+    sponser_code: newReferralCode,
+    sponserBy: sponserBy,
     country,
-    region,
   });
 
-  if (referredBy) {
-    const referringUser = await User.findOne({ referral_code: referredBy });
+  if (sponserBy) {
+    const referringUser = await User.findOne({ sponser_code: sponserBy });
     if (referringUser) {
       // referringUser.points += 250;
       await referringUser.save();
