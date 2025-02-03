@@ -46,6 +46,11 @@ const userSchema = new Schema(
       type: String,
     },
     sponserBy: { type: String },
+    salected_lag:{
+      type: String,
+      required: true,
+      enum: ["left", "right"],
+    },
     points: { type: Number, default: 0 },
     refreshToken: {
       type: String,

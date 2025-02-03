@@ -35,6 +35,7 @@ const registerUser = asyncHandler(async (req, res) => {
     dob,
     sponserBy,
     country,
+    salected_lag
   } = req.body;
 
   const existingUser = await User.findOne({ email });
@@ -45,7 +46,7 @@ const registerUser = asyncHandler(async (req, res) => {
       .json(new ApiError(409, "User with email already exists"));
   }
 
-  const newReferralCode = nanoid(10);
+  const newReferralCode ="JI"+nanoid(10);
 
   const user_type = sponserBy ? "Admin" : "User";
 
@@ -60,6 +61,7 @@ const registerUser = asyncHandler(async (req, res) => {
     sponser_code: newReferralCode,
     sponserBy: sponserBy,
     country,
+    salected_lag,
   });
 
   if (sponserBy) {
