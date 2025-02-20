@@ -6,6 +6,11 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
 import { nanoid } from "nanoid";
+// import { generateId } from "../utils/rendomId.js";
+
+const generateReferralCode = () => {
+  return `JEE${Math.floor(10000000 + Math.random() * 90000000)}`;
+};
 
 const generateAccessAndRefereshTokens = async (userId) => {
   try {
@@ -29,13 +34,13 @@ const registerUser = asyncHandler(async (req, res) => {
   const {
     title,
     fullName,
-    email,
     phone,
-    password,
+    email,
     dob,
+    password,
     sponserBy,
     country,
-    salected_lag
+    position,
   } = req.body;
 
   const existingUser = await User.findOne({ email });
@@ -45,40 +50,69 @@ const registerUser = asyncHandler(async (req, res) => {
       .status(409)
       .json(new ApiError(409, "User with email already exists"));
   }
+  const user_type = "User";
 
-  const newReferralCode ="JI"+nanoid(10);
+  // if (sponserBy) {
+  //   const referringUser = await User.findOne({ sponser_code: sponserBy });
+  //   if (referringUser) {
+  //     // referringUser.points += 250;
+  //     await referringUser.save();
+  //   }
+  // }
 
-  const user_type = sponserBy ? "Admin" : "User";
+  const newReferralCode = generateReferralCode();
 
-  const user = new User({
-    fullName,
-    email,
+  const sponserCode = sponserBy ? sponserBy : "JEE123456";
+
+  const parent = await User.findOne({ sponser_code: sponserCode });
+  const newUser = new User({
     title,
+    fullName,
     dob,
     phone,
+    email,
+    user_type: user_type,
     password,
-    user_type:user_type,
     sponser_code: newReferralCode,
-    sponserBy: sponserBy,
+    sponserBy: sponserCode,
     country,
-    salected_lag,
   });
 
-  if (sponserBy) {
-    const referringUser = await User.findOne({ sponser_code: sponserBy });
-    if (referringUser) {
-      // referringUser.points += 250;
-      await referringUser.save();
+  if (position === "left" && !parent.leftChild) {
+    parent.leftChild = newUser._id;
+    newUser.position = position;
+  } else if (position === "right" && !parent.rightChild) {
+    parent.rightChild = newUser._id;
+    newUser.position = position;
+  } else {
+    // const leftChildUser = await User.findById(parent.leftChild);
+    // if (leftChildUser) {
+    //   leftChildUser.leftChild = newUser._id;
+    //   await leftChildUser.save();
+    // }
+    if (position === "right") {
+      let childParent = await User.findById(parent.rightChild);
+      if (!childParent) return;
+      while (childParent.rightChild) {
+        childParent = await User.findById(childParent.rightChild);
+      }
+      childParent.rightChild = newUser._id;
+      await childParent.save();
+    } else {
+      let childParent = await User.findById(parent.leftChild);
+      if (!childParent) return;
+      while (childParent.leftChild) {
+        childParent = await User.findById(childParent.leftChild);
+      }
+      childParent.leftChild = newUser._id;
+      await childParent.save();
     }
   }
 
-  await user.save();
+  await newUser.save();
+  await parent.save();
 
-  const createdUser = await User.findById(user._id).select(
-    "-password -refreshToken"
-  );
-
-  if (!createdUser) {
+  if (!newUser) {
     return res
       .status(500)
       .json(
@@ -88,8 +122,36 @@ const registerUser = asyncHandler(async (req, res) => {
 
   return res
     .status(201)
-    .json(new ApiResponse(201, createdUser, "User registered successfully"));
+    .json(new ApiResponse(201, newUser, "User registered successfully"));
 });
+
+const getUserTree = asyncHandler(async (req, res) => {
+  const { sponser_code } = req.params;
+
+  async function buildTree(user) {
+    if (!user) return null;
+
+    // Fetch child nodes recursively
+    const leftChild = user.leftChild ? await User.findById(user.leftChild) : null;
+    const rightChild = user.rightChild ? await User.findById(user.rightChild) : null;
+
+    return {
+      id: user._id,
+      name: user.fullName,
+      children: [await buildTree(leftChild), await buildTree(rightChild)].filter(Boolean),
+    };
+  }
+
+  const rootUser = await User.findOne({ sponser_code });
+  if (!rootUser) {
+    return res.status(404).json({ message: "User not found" });
+  }
+
+  const tree = await buildTree(rootUser);
+  res.json(tree);
+});
+
+
 
 const loginUser = asyncHandler(async (req, res) => {
   // req body -> data
@@ -644,4 +706,5 @@ export {
   deleteUser,
   updateUser,
   getUserById,
+  getUserTree
 };

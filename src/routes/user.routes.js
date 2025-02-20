@@ -17,7 +17,8 @@ import {
     deleteUser,
     updateUser,
     getUserById,
-    getUsersReferredByMe
+    getUsersReferredByMe,
+    getUserTree
 } from "../controllers/user.controller.js";
 import { uploadSingle, uploadMultiple } from "../middlewares/multer.middleware.js"
 import { verifyJWT } from "../middlewares/auth.middleware.js";
@@ -46,6 +47,6 @@ router.route("/update-account").patch(verifyJWT, updateAccountDetails)
 // router.route("/cover-image").patch(verifyJWT, upload.single("coverImage"), updateUserCoverImage)
 router.route("/c/:username").get(verifyJWT, getUserChannelProfile)
 router.route("/history").get(verifyJWT, getWatchHistory)
-
+router.route("/user-tree/:sponser_code").get(getUserTree);
 
 export default router
