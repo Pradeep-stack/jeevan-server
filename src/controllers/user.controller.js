@@ -31,99 +31,184 @@ const generateAccessAndRefereshTokens = async (userId) => {
 };
 
 const registerUser = asyncHandler(async (req, res) => {
-  const {
-    title,
-    fullName,
-    phone,
-    email,
-    dob,
-    password,
-    sponserBy,
-    country,
-    position,
-  } = req.body;
+  try {
+    const {
+      title,
+      fullName,
+      phone,
+      email,
+      dob,
+      password,
+      sponserBy,
+      country,
+      position,
+    } = req.body;
 
-  const existingUser = await User.findOne({ email });
-
-  if (existingUser) {
-    return res
-      .status(409)
-      .json(new ApiError(409, "User with email already exists"));
-  }
-  const user_type = "User";
-
-  // if (sponserBy) {
-  //   const referringUser = await User.findOne({ sponser_code: sponserBy });
-  //   if (referringUser) {
-  //     // referringUser.points += 250;
-  //     await referringUser.save();
-  //   }
-  // }
-
-  const newReferralCode = generateReferralCode();
-
-  const sponserCode = sponserBy ? sponserBy : "JEE123456";
-
-  const parent = await User.findOne({ sponser_code: sponserCode });
-  const newUser = new User({
-    title,
-    fullName,
-    dob,
-    phone,
-    email,
-    user_type: user_type,
-    password,
-    sponser_code: newReferralCode,
-    sponserBy: sponserCode,
-    country,
-  });
-
-  if (position === "left" && !parent.leftChild) {
-    parent.leftChild = newUser._id;
-    newUser.position = position;
-  } else if (position === "right" && !parent.rightChild) {
-    parent.rightChild = newUser._id;
-    newUser.position = position;
-  } else {
-    // const leftChildUser = await User.findById(parent.leftChild);
-    // if (leftChildUser) {
-    //   leftChildUser.leftChild = newUser._id;
-    //   await leftChildUser.save();
-    // }
-    if (position === "right") {
-      let childParent = await User.findById(parent.rightChild);
-      if (!childParent) return;
-      while (childParent.rightChild) {
-        childParent = await User.findById(childParent.rightChild);
-      }
-      childParent.rightChild = newUser._id;
-      await childParent.save();
-    } else {
-      let childParent = await User.findById(parent.leftChild);
-      if (!childParent) return;
-      while (childParent.leftChild) {
-        childParent = await User.findById(childParent.leftChild);
-      }
-      childParent.leftChild = newUser._id;
-      await childParent.save();
+    // Check if user already exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(409).json({ message: "User with email already exists" });
     }
+
+    const user_type = "User";
+    const newReferralCode = generateReferralCode();
+    const sponserCode = sponserBy || "JEE123456";
+
+    // Find parent user by sponsor code
+    const parent = await User.findOne({ sponser_code: sponserCode });
+
+    // Create new user
+    const newUser = new User({
+      title,
+      fullName,
+      dob,
+      phone,
+      email,
+      user_type,
+      password,
+      sponser_code: newReferralCode,
+      sponserBy: sponserCode,
+      country,
+    });
+
+    if (parent) {
+      if (position === "left" && !parent.leftChild) {
+        parent.leftChild = newUser._id;
+        newUser.position = position;
+      } else if (position === "right" && !parent.rightChild) {
+        parent.rightChild = newUser._id;
+        newUser.position = position;
+      } else if (position === "right" && parent.rightChild) {
+        let childParent = await User.findById(parent.rightChild);
+        while (childParent && childParent.rightChild) {
+          childParent = await User.findById(childParent.rightChild);
+        }
+        if (childParent) {
+          childParent.rightChild = newUser._id;
+          await childParent.save();
+        }
+      } else if (position === "left" && parent.leftChild) {
+        let childParent = await User.findById(parent.leftChild);
+        while (childParent && childParent.leftChild) {
+          childParent = await User.findById(childParent.leftChild);
+        }
+        if (childParent) {
+          childParent.leftChild = newUser._id;
+          await childParent.save();
+        }
+      }
+    }
+
+    // Save user & parent updates
+    await newUser.save();
+    if (parent) await parent.save();
+
+    return res.status(201).json({ user: newUser, message: "User registered successfully" });
+
+  } catch (error) {
+    console.error("Error registering user:", error);
+    return res.status(500).json({ message: "Something went wrong while registering the user" });
   }
-
-  await newUser.save();
-  await parent.save();
-
-  if (!newUser) {
-    return res
-      .status(500)
-      .json(
-        new ApiError(500, "Something went wrong while registering the user")
-      );
-  }
-
-  return res
-    .status(201)
-    .json(new ApiResponse(201, newUser, "User registered successfully"));
 });
+
+
+// const registerUser = asyncHandler(async (req, res) => {
+//   const {
+//     title,
+//     fullName,
+//     phone,
+//     email,
+//     dob,
+//     password,
+//     sponserBy,
+//     country,
+//     position,
+//   } = req.body;
+
+//   try {
+//     // Check if user already exists
+
+//     const existingUser = await User.findOne( email );
+//     if (existingUser) {
+//       return res
+//         .status(409)
+//         .json(new ApiError(409, "User with email already exists"));
+//     }
+//     // Generate referral code and set sponsor code
+//     const user_type = "User";
+//     const newReferralCode = generateReferralCode();
+//     const sponserCode = sponserBy ? sponserBy : "JEE123456";
+
+//     // Find the parent user (sponsor)
+//     const parent = await User.findOne( sponserCode );
+//     // if (!parent) {
+//     //   return res
+//     //     .status(404)
+//     //     .json(new ApiError(404, "Sponsor not found"));
+//     // }
+// console.log(parent);
+// console.log(existingUser);
+//     // Create the new user
+//     const newUser = new User({
+//       title,
+//       fullName,
+//       dob,
+//       phone: Number(phone), // Convert phone to a number if your schema expects it
+//       email,
+//       user_type:user_type,
+//       password,
+//       sponser_code: newReferralCode,
+//       sponserBy: sponserCode,
+//       country,
+//       position,
+//     });
+
+//     // Save the new user
+//     await newUser.save();
+
+//     // Function to find the last child in the hierarchy
+//     const findLastChild = async (userId, position) => {
+//       let currentUser = await User.findById(userId);
+//       if (!currentUser) {
+//         throw new Error(`User with ID ${userId} not found`);
+//       }
+//       while (currentUser[`${position}Child`]) {
+//         currentUser = await User.findById(currentUser[`${position}Child`]);
+//         if (!currentUser) {
+//           throw new Error(`User with ID ${currentUser[`${position}Child`]} not found`);
+//         }
+//       }
+//       return currentUser;
+//     };
+
+//     // Add the new user to the hierarchy
+//     if (position === "left" || position === "right") {
+//       if (!parent[`${position}Child`]) {
+//         parent[`${position}Child`] = newUser._id;
+//       } else {
+//         const lastChild = await findLastChild(parent[`${position}Child`], position);
+//         lastChild[`${position}Child`] = newUser._id;
+//         await lastChild.save();
+//       }
+//     } else {
+//       return res
+//         .status(400)
+//         .json(new ApiError(400, "Invalid position. Use 'left' or 'right'"));
+//     }
+
+//     // Save the parent user
+//     await parent.save();
+
+//     return res
+//       .status(201)
+//       .json(new ApiResponse(201, newUser, "User registered successfully"));
+//   } catch (error) {
+//     // Handle validation errors (e.g., incorrect data types)
+//     return res
+//       .status(500)
+//       .json(new ApiError(500, error.message));
+//   }
+// });
 
 const getUserTree = asyncHandler(async (req, res) => {
   const { sponser_code } = req.params;
@@ -132,13 +217,20 @@ const getUserTree = asyncHandler(async (req, res) => {
     if (!user) return null;
 
     // Fetch child nodes recursively
-    const leftChild = user.leftChild ? await User.findById(user.leftChild) : null;
-    const rightChild = user.rightChild ? await User.findById(user.rightChild) : null;
+    const leftChild = user.leftChild
+      ? await User.findById(user.leftChild)
+      : null;
+    const rightChild = user.rightChild
+      ? await User.findById(user.rightChild)
+      : null;
 
     return {
       id: user._id,
       name: user.fullName,
-      children: [await buildTree(leftChild), await buildTree(rightChild)].filter(Boolean),
+      children: [
+        await buildTree(leftChild),
+        await buildTree(rightChild),
+      ].filter(Boolean),
     };
   }
 
@@ -150,8 +242,6 @@ const getUserTree = asyncHandler(async (req, res) => {
   const tree = await buildTree(rootUser);
   res.json(tree);
 });
-
-
 
 const loginUser = asyncHandler(async (req, res) => {
   // req body -> data
@@ -706,5 +796,5 @@ export {
   deleteUser,
   updateUser,
   getUserById,
-  getUserTree
+  getUserTree,
 };

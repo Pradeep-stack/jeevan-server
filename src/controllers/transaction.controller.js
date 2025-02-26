@@ -82,7 +82,7 @@ export const getTransactions = asyncHandler(async (req, res) => {
 
   try {
     // Find all transactions for the given userId
-    const transactions = await Transaction.find();
+    const transactions = await Transaction.find().populate('userId', 'fullName phone email');
 
     if (transactions.length === 0) {
       return res

@@ -2,7 +2,7 @@ import mongoose, { Schema } from "mongoose";
 
 const transactionSchema = new Schema(
   {
-    userId: { type: mongoose.Schema.Types.ObjectId, required: true },
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     packageId: { type: mongoose.Schema.Types.ObjectId},
     price: { type: Number, required: true },
     transactionId: { type: String, required: true }, // Unique ID from payment
