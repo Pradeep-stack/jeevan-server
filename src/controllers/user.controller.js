@@ -47,9 +47,15 @@ const registerUser = asyncHandler(async (req, res) => {
     // Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.status(409).json({ message: "User with email already exists" });
+      return res
+        .status(409)
+        .json({ message: "User with email already exists" });
     }
-
+    if (!sponserBy || !position) {
+      return res
+        .status(409)
+        .json({ message: "Sponser Code and Postions Compulsory" });
+    }
     const user_type = "User";
     const newReferralCode = generateReferralCode();
     const sponserCode = sponserBy || "JEE123456";
@@ -103,14 +109,16 @@ const registerUser = asyncHandler(async (req, res) => {
     await newUser.save();
     if (parent) await parent.save();
 
-    return res.status(201).json({ user: newUser, message: "User registered successfully" });
-
+    return res
+      .status(201)
+      .json({ user: newUser, message: "User registered successfully" });
   } catch (error) {
     console.error("Error registering user:", error);
-    return res.status(500).json({ message: "Something went wrong while registering the user" });
+    return res
+      .status(500)
+      .json({ message: "Something went wrong while registering the user" });
   }
 });
-
 
 // const registerUser = asyncHandler(async (req, res) => {
 //   const {
